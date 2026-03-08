@@ -1,3 +1,49 @@
-- name: Install rclone
-  run: |
-    curl https://rclone.org/install.sh | sudo bash
+name: Jellyfin MEGA Server
+
+on:
+  workflow_dispatch:  # lets you run manually
+
+jobs:
+  run-jellyfin:
+    runs-on: ubuntu-latest
+    steps:
+      # Install rclone
+      - name: Install rclone
+        run: |
+          curl https://rclone.org/install.sh | sudo bash
+
+      # Set up rclone config from GitHub secret
+      - name: Setup rclone config
+        run: |
+          mkdir -p ~/.config/rclone
+          echo "${{ secrets.RCLONE_CONF }}" > ~/.config/rclone/rclone.conf
+
+      # Install Docker
+      - name: Install Docker
+        run: |
+          sudo apt update
+          sudo apt install -y docker.io
+
+      # Mount MEGA
+      - name: Mount MEGA
+        run: |
+          mkdir /mnt/media
+          rclone mount "mega:3TA" /mnt/media --vfs-cache-mode writes --daemon
+
+      # Start Jellyfin
+      - name: Start Jellyfin
+        run: |
+          sudo docker run -d \
+            --name jellyfin \
+            -p 8096:8096 \
+            -v /mnt/media:/media \
+            jellyfin/jellyfin:latest
+
+      # Install Ngrok for public access
+      - name: Install Ngrok
+        run: |
+          curl -s https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip -o ngrok.zip
+          unzip ngrok.zip
+          chmod +x ngrok
+          ./ngrok authtoken ${{ secrets.NGROK_TOKEN }}
+          ./ngrok http 8096 &
