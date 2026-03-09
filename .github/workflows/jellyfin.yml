@@ -24,6 +24,10 @@ jobs:
         run: |
           mkdir -p $HOME/media
           rclone mount "Mega:3TA" $HOME/media --vfs-cache-mode writes --daemon
+      
+      - name: Check MEGA mount
+        run: |
+          ls -lah /home/runner/media
 
       # 4️⃣ Install Jellyfin
       - name: Install Jellyfin
