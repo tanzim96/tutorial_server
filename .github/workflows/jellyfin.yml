@@ -33,10 +33,7 @@ jobs:
         run: |
            ls -la /home/runner
            ls -la /home/runner/media
-      - name: Fix permissions for Jellyfin
-        run: |
-          sudo chmod -R 755 /home/runner
-          sudo chown -R jellyfin:jellyfin /home/runner/media
+          
 
       # 4️⃣ Install Jellyfin
       - name: Install Jellyfin
@@ -48,9 +45,9 @@ jobs:
           sudo apt update
           sudo apt install -y jellyfin
 
-      # 5️⃣ Start Jellyfin
-      - name: Start Jellyfin
-        run: sudo jellyfin &
+      - name: Start Jellyfin as runner
+        run: |
+          jellyfin --datadir $HOME/.config/jellyfin --cachedir $HOME/.cache/jellyfin &
 
       - name: Install and Start Ngrok
         run: |
