@@ -26,10 +26,13 @@ jobs:
             --daemon \
             --vfs-cache-mode writes \
             --dir-cache-time 10s
+            echo "Waiting for mount..."
+            sleep 15
       
-      - name: Check MEGA mount
-        run: |
-          ls -lah /home/runner/media
+       - name: Check files
+         run: |
+          ls -la /home/runner
+          ls -la /home/runner/media
 
       # 4️⃣ Install Jellyfin
       - name: Install Jellyfin
