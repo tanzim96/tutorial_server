@@ -29,10 +29,10 @@ jobs:
             echo "Waiting for mount..."
             sleep 15
       
-       - name: Check files
-         run: |
-          ls -la /home/runner
-          ls -la /home/runner/media
+      - name: Check files
+        run: |
+           ls -la /home/runner
+           ls -la /home/runner/media
 
       # 4️⃣ Install Jellyfin
       - name: Install Jellyfin
