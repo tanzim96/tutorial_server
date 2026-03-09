@@ -19,11 +19,13 @@ jobs:
           mkdir -p ~/.config/rclone
           echo "${{ secrets.RCLONE_CONF }}" > ~/.config/rclone/rclone.conf
 
-      # 3️⃣ Mount MEGA
       - name: Mount MEGA
         run: |
-          mkdir -p $HOME/media
-          rclone mount "Mega:3TA" $HOME/media --vfs-cache-mode writes --daemon
+          mkdir -p /home/runner/media
+          rclone mount Mega:3TA /home/runner/media \
+            --daemon \
+            --vfs-cache-mode writes \
+            --dir-cache-time 10s
       
       - name: Check MEGA mount
         run: |
