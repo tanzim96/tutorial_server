@@ -39,10 +39,16 @@ jobs:
       - name: Start Jellyfin
         run: sudo jellyfin &
 
-      - name: Install Ngrok
+      - name: Install and Start Ngrok
         run: |
           curl -L https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz -o ngrok.tgz
           tar -xvzf ngrok.tgz
           chmod +x ngrok
+      
           ./ngrok config add-authtoken ${{ secrets.NGROK_TOKEN }}
-          ./ngrok http 8096 &
+      
+          ./ngrok http 8096 > /dev/null &
+      
+          sleep 5
+      
+          curl http://127.0.0.1:4040/api/tunnels
