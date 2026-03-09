@@ -52,3 +52,6 @@ jobs:
           sleep 5
       
           curl http://127.0.0.1:4040/api/tunnels
+          
+      - name: Keep server alive
+        run: sleep 21600
