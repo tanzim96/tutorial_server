@@ -39,11 +39,10 @@ jobs:
       - name: Start Jellyfin
         run: sudo jellyfin &
 
-      # 6️⃣ Install Ngrok and start public URL
       - name: Install Ngrok
         run: |
-          curl -s https://bin.equinox.io/c/4VmDzA7iaHb/ngrok-stable-linux-amd64.zip -o ngrok.zip
-          unzip ngrok.zip
+          curl -L https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz -o ngrok.tgz
+          tar -xvzf ngrok.tgz
           chmod +x ngrok
-          ./ngrok authtoken ${{ secrets.NGROK_TOKEN }}
+          ./ngrok config add-authtoken ${{ secrets.NGROK_TOKEN }}
           ./ngrok http 8096 &
