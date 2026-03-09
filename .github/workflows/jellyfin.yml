@@ -44,10 +44,16 @@ jobs:
           echo "deb [arch=$( dpkg --print-architecture )] https://repo.jellyfin.org/ubuntu $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/jellyfin.list
           sudo apt update
           sudo apt install -y jellyfin
-
-      - name: Start Jellyfin as runner
+      
+      - name: Verify MEGA files
         run: |
-          jellyfin --datadir $HOME/.config/jellyfin --cachedir $HOME/.cache/jellyfin &
+          ls -lah /home/runner/media
+          
+      - name: Start Jellyfin
+        run: |
+          echo "Waiting for MEGA mount..."
+          sleep 20
+          jellyfin --datadir /home/runner/jellyfin-data --cachedir /home/runner/jellyfin-cache &
 
       - name: Install and Start Ngrok
         run: |
