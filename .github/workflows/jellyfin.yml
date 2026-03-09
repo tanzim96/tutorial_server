@@ -33,6 +33,10 @@ jobs:
         run: |
            ls -la /home/runner
            ls -la /home/runner/media
+      - name: Fix permissions for Jellyfin
+        run: |
+          sudo chmod -R 755 /home/runner
+          sudo chown -R jellyfin:jellyfin /home/runner/media
 
       # 4️⃣ Install Jellyfin
       - name: Install Jellyfin
