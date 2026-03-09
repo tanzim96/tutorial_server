@@ -29,8 +29,8 @@ jobs:
             echo "Waiting for mount..."
             sleep 15
       
-       - name: Check files
-         run: |
+      - name: Check files
+        run: |
           ls -la /home/runner
           ls -la /home/runner/media
 
