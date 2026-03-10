@@ -1,73 +1,67 @@
-name: Jellyfin MEGA Server
+name: Jellyfin Server
 
 on:
-  workflow_dispatch:  # allows manual run
+  workflow_dispatch:
 
 jobs:
-  run-jellyfin:
+    run-jellyfin:
     runs-on: ubuntu-latest
-
-    steps:
-      # 1️⃣ Install rclone
-      - name: Install rclone
-        run: |
-          curl https://rclone.org/install.sh | sudo bash
-
-      # 2️⃣ Setup rclone config
-      - name: Setup rclone config
-        run: |
-          mkdir -p ~/.config/rclone
-          echo "${{ secrets.RCLONE_CONF }}" > ~/.config/rclone/rclone.conf
-
-      - name: Mount MEGA
-        run: |
-          mkdir -p /home/runner/media
-          rclone mount Mega:3TA /home/runner/media \
-            --daemon \
-            --vfs-cache-mode writes \
-            --dir-cache-time 10s
-            echo "Waiting for mount..."
-            sleep 15
-      
-      - name: Check files
-        run: |
-           ls -la /home/runner
-           ls -la /home/runner/media
-          
-
-      # 4️⃣ Install Jellyfin
-      - name: Install Jellyfin
-        run: |
-          sudo apt update
-          sudo apt install -y apt-transport-https software-properties-common wget
-          wget -O - https://repo.jellyfin.org/ubuntu/jellyfin_team.gpg.key | sudo apt-key add -
-          echo "deb [arch=$( dpkg --print-architecture )] https://repo.jellyfin.org/ubuntu $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/jellyfin.list
-          sudo apt update
-          sudo apt install -y jellyfin
-      
-      - name: Verify MEGA files
-        run: |
-          ls -lah /home/runner/media
-          
-      - name: Start Jellyfin
-        run: |
-          echo "Waiting for MEGA mount..."
-          sleep 20
-          jellyfin --datadir /home/runner/jellyfin-data --cachedir /home/runner/jellyfin-cache &
-
-      - name: Install and Start Ngrok
-        run: |
-          curl -L https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz -o ngrok.tgz
-          tar -xvzf ngrok.tgz
-          chmod +x ngrok
-      
-          ./ngrok config add-authtoken ${{ secrets.NGROK_TOKEN }}
-      
-          ./ngrok http 8096 > /dev/null &
-      
-          sleep 5
-      
-          curl http://127.0.0.1:4040/api/tunnels
-          
-      - name: Keep server alive
-        run: sleep 21600
+  
+  steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+  
+    - name: Install dependencies
+      run: |
+        sudo apt update
+        sudo apt install -y rclone jellyfin curl unzip
+  
+    - name: Setup rclone config
+      run: |
+        mkdir -p $HOME/.config/rclone
+        echo "${{ secrets.RCLONE_CONFIG }}" > $HOME/.config/rclone/rclone.conf
+  
+    - name: Mount MEGA
+      run: |
+        mkdir -p $HOME/media
+        rclone mount "Mega:3TA" $HOME/media --vfs-cache-mode writes --daemon
+        
+        echo "Waiting for mount..."
+        for i in {1..30}; do
+          if ls $HOME/media > /dev/null 2>&1; then
+            echo "Mount ready"
+            break
+          fi
+          sleep 2
+        done
+  
+        echo "Files inside mount:"
+        ls -lah $HOME/media
+  
+    - name: Stop system Jellyfin
+      run: |
+        sudo systemctl stop jellyfin || true
+        sudo systemctl disable jellyfin || true
+  
+    - name: Start Jellyfin
+      run: |
+        jellyfin --datadir $HOME/jellyfin-data --cachedir $HOME/jellyfin-cache &
+  
+    - name: Install Ngrok
+      run: |
+        curl -L https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz -o ngrok.tgz
+        tar -xvzf ngrok.tgz
+        chmod +x ngrok
+        ./ngrok config add-authtoken ${{ secrets.NGROK_TOKEN }}
+  
+    - name: Start Ngrok
+      run: |
+        ./ngrok http 8096 &
+  
+    - name: Show Ngrok URL
+      run: |
+        sleep 10
+        curl http://127.0.0.1:4040/api/tunnels
+  
+    - name: Keep server alive
+      run: sleep 21600
