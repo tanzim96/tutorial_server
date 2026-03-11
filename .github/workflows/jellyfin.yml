@@ -4,64 +4,87 @@ on:
   workflow_dispatch:
 
 jobs:
-    run-jellyfin:
+  run-jellyfin:
     runs-on: ubuntu-latest
-  
-  steps:
-    - name: Checkout
-      uses: actions/checkout@v4
-  
-    - name: Install dependencies
-      run: |
-        sudo apt update
-        sudo apt install -y rclone jellyfin curl unzip
-  
-    - name: Setup rclone config
-      run: |
-        mkdir -p $HOME/.config/rclone
-        echo "${{ secrets.RCLONE_CONFIG }}" > $HOME/.config/rclone/rclone.conf
-  
-    - name: Mount MEGA
-      run: |
-        mkdir -p $HOME/media
-        rclone mount "Mega:3TA" $HOME/media --vfs-cache-mode writes --daemon
-        
-        echo "Waiting for mount..."
-        for i in {1..30}; do
-          if ls $HOME/media > /dev/null 2>&1; then
-            echo "Mount ready"
-            break
-          fi
-          sleep 2
-        done
-  
-        echo "Files inside mount:"
-        ls -lah $HOME/media
-  
-    - name: Stop system Jellyfin
-      run: |
-        sudo systemctl stop jellyfin || true
-        sudo systemctl disable jellyfin || true
-  
-    - name: Start Jellyfin
-      run: |
-        jellyfin --datadir $HOME/jellyfin-data --cachedir $HOME/jellyfin-cache &
-  
-    - name: Install Ngrok
-      run: |
-        curl -L https://bin.equinox.io/c/bNyj1mQVY4c/ngrok-v3-stable-linux-amd64.tgz -o ngrok.tgz
-        tar -xvzf ngrok.tgz
-        chmod +x ngrok
-        ./ngrok config add-authtoken ${{ secrets.NGROK_TOKEN }}
-  
-    - name: Start Ngrok
-      run: |
-        ./ngrok http 8096 &
-  
-    - name: Show Ngrok URL
-      run: |
-        sleep 10
-        curl http://127.0.0.1:4040/api/tunnels
-  
-    - name: Keep server alive
-      run: sleep 21600
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          curl -fsSL https://repo.jellyfin.org/install-jellyfin.py | sudo python3 -
+          sudo apt install -y rclone curl unzip
+
+      - name: Setup rclone config
+        run: |
+          mkdir -p $HOME/.config/rclone
+          echo "${{ secrets.RCLONE_CONFIG }}" > $HOME/.config/rclone/rclone.conf
+
+      - name: Mount MEGA
+        run: |
+          sudo modprobe fuse
+          mkdir -p $HOME/media
+          rclone mount "Mega:3TA" $HOME/media \
+            --vfs-cache-mode writes \
+            --allow-other \
+            --daemon
+
+          echo "Waiting for mount..."
+          for i in {1..30}; do
+            if ls $HOME/media > /dev/null 2>&1; then
+              echo "Mount ready"
+              break
+            fi
+            sleep 2
+          done
+          echo "Files inside mount:"
+          ls -lah $HOME/media
+
+      - name: Stop system Jellyfin
+        run: |
+          sudo systemctl stop jellyfin || true
+          sudo systemctl disable jellyfin || true
+
+      - name: Start Jellyfin
+        run: |
+          jellyfin --datadir $HOME/jellyfin-data --cachedir $HOME/jellyfin-cache &
+          echo "Waiting for Jellyfin to be ready..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8096/health | grep -q "Healthy"; then
+              echo "Jellyfin is ready"
+              break
+            fi
+            sleep 3
+          done
+
+      - name: Install Ngrok
+        run: |
+          curl -sSL https://ngrok-agent.s3.amazonaws.com/ngrok.asc \
+            | sudo tee /etc/apt/trusted.gpg.d/ngrok.asc > /dev/null
+          echo "deb https://ngrok-agent.s3.amazonaws.com buster main" \
+            | sudo tee /etc/apt/sources.list.d/ngrok.list
+          sudo apt update && sudo apt install -y ngrok
+          ngrok config add-authtoken ${{ secrets.NGROK_TOKEN }}
+
+      - name: Start Ngrok
+        run: |
+          ngrok http 8096 &
+
+      - name: Show Ngrok URL
+        run: |
+          echo "Waiting for Ngrok tunnel..."
+          for i in {1..15}; do
+            URL=$(curl -s http://127.0.0.1:4040/api/tunnels \
+              | python3 -c "import sys,json; print(json.load(sys.stdin)['tunnels'][0]['public_url'])" 2>/dev/null)
+            if [ -n "$URL" ]; then
+              echo "========================================="
+              echo "Jellyfin URL: $URL"
+              echo "========================================="
+              break
+            fi
+            sleep 2
+          done
+
+      - name: Keep server alive
+        run: sleep 21000
