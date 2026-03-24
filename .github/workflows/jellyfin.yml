@@ -25,7 +25,7 @@ jobs:
         run: |
           sudo modprobe fuse
           mkdir -p $HOME/media
-          rclone mount "Mega:3TA" $HOME/media \
+          rclone mount "mega:3TA" $HOME/media \
             --vfs-cache-mode writes \
             --allow-other \
             --daemon
