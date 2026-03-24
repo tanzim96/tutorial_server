@@ -19,7 +19,7 @@ jobs:
       - name: Setup rclone config
         run: |
           mkdir -p $HOME/.config/rclone
-          echo "${{ secrets.RCLONE_CONFIG }}" > $HOME/.config/rclone/rclone.conf
+          echo "${{ secrets.RCLONE_CONF }}" > $HOME/.config/rclone/rclone.conf
 
       - name: Mount MEGA
         run: |
