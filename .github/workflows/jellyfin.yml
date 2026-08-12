@@ -13,8 +13,13 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
+          sudo apt install -y curl unzip fuse3
+
+          # Install latest rclone with all backends including MEGA
+          curl https://rclone.org/install.sh | sudo bash
+
+          # Install Jellyfin
           curl -fsSL https://repo.jellyfin.org/install-jellyfin.py | sudo python3 -
-          sudo apt install -y rclone curl unzip
 
       - name: Setup rclone config
         run: |
