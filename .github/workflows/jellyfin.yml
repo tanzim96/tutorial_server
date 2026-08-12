@@ -19,11 +19,10 @@ jobs:
       - name: Setup rclone config
         run: |
           mkdir -p $HOME/.config/rclone
-          cat > $HOME/.config/rclone/rclone.conf << 'EOF'
-          ${{ secrets.RCLONE_CONFIG }}
-          EOF
-          echo "--- Checking config file ---"
-          cat $HOME/.config/rclone/rclone.conf
+          echo "${{ secrets.RCLONE_CONFIG }}" > $HOME/.config/rclone/rclone.conf
+          sed -i 's/\r//' $HOME/.config/rclone/rclone.conf
+          echo "--- Section headers in config ---"
+          grep "^\[" $HOME/.config/rclone/rclone.conf
           echo "--- Listing remotes ---"
           rclone listremotes
 
